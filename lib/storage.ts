@@ -1,90 +1,90 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-if (!process.env.CLOUDFLARE_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY || !process.env.R2_BUCKET_NAME) {
-  throw new Error('Cloudflare R2 environment variables are not set');
+if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
+  throw new Error('R2 credentials are not set');
 }
 
-// Configure S3 client for Cloudflare R2
-const r2 = new S3Client({
+// Cloudflare R2 Client (S3-compatible)
+const r2Client = new S3Client({
   region: 'auto',
-  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
   },
 });
 
-const BUCKET_NAME = process.env.R2_BUCKET_NAME;
-const PUBLIC_URL = process.env.R2_PUBLIC_URL; // Optional: your R2 public domain
-
-export interface UploadOptions {
-  key: string;
-  body: Buffer | Uint8Array | Blob | string;
-  contentType?: string;
-  metadata?: Record<string, string>;
-}
+const BUCKET_NAME = process.env.R2_BUCKET_NAME || 'saas-uploads';
+const PUBLIC_URL = process.env.R2_PUBLIC_URL; // Optional: if you have a custom domain
 
 /**
  * Upload a file to R2
  */
-export async function uploadFile({ key, body, contentType, metadata }: UploadOptions) {
+export async function uploadToR2(
+  key: string,
+  file: Buffer | Uint8Array | Blob,
+  contentType: string = 'application/octet-stream'
+): Promise<string> {
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
-    Body: body as any,
+    Body: file as Buffer,
     ContentType: contentType,
-    Metadata: metadata,
   });
 
-  await r2.send(command);
+  await r2Client.send(command);
 
-  return {
-    key,
-    url: getPublicUrl(key),
-  };
+  // Return public URL if available, otherwise signed URL
+  if (PUBLIC_URL) {
+    return `${PUBLIC_URL}/${key}`;
+  }
+
+  return getPublicUrl(key);
 }
 
 /**
  * Delete a file from R2
  */
-export async function deleteFile(key: string) {
+export async function deleteFromR2(key: string): Promise<void> {
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
   });
 
-  await r2.send(command);
+  await r2Client.send(command);
 }
 
 /**
  * Get a signed URL for private file access (expires in 1 hour by default)
  */
-export async function getSignedFileUrl(key: string, expiresIn: number = 3600) {
+export async function getSignedR2Url(key: string, expiresIn: number = 3600): Promise<string> {
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
   });
 
-  return await getSignedUrl(r2, command, { expiresIn });
+  return getSignedUrl(r2Client, command, { expiresIn });
 }
 
 /**
- * Get public URL for a file (if you have R2 public domain configured)
+ * Get public URL (works if bucket has public access or custom domain)
  */
 export function getPublicUrl(key: string): string {
   if (PUBLIC_URL) {
     return `${PUBLIC_URL}/${key}`;
   }
-  // Fallback to R2.dev subdomain (if enabled in your R2 bucket settings)
-  return `https://${BUCKET_NAME}.r2.dev/${key}`;
+  return `https://${BUCKET_NAME}.${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
 }
 
 /**
- * Generate a unique file key with timestamp
+ * Helper: Generate unique filename
  */
-export function generateFileKey(userId: string, filename: string): string {
+export function generateUniqueFilename(originalName: string, userId?: string): string {
   const timestamp = Date.now();
-  const sanitized = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-  return `${userId}/${timestamp}-${sanitized}`;
+  const random = Math.random().toString(36).substring(2, 15);
+  const extension = originalName.split('.').pop();
+  const prefix = userId ? `${userId}/` : '';
+  
+  return `${prefix}${timestamp}-${random}.${extension}`;
 }
