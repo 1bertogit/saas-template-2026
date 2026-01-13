@@ -10,7 +10,7 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 /**
- * Cria uma sessão de checkout do Stripe
+ * Create a Stripe checkout session for a subscription
  */
 export async function createCheckoutSession({
   priceId,
@@ -51,9 +51,9 @@ export async function createCheckoutSession({
 }
 
 /**
- * Cria um portal de gerenciamento de assinatura
+ * Create a Stripe customer portal session
  */
-export async function createCustomerPortalSession({
+export async function createPortalSession({
   customerId,
   returnUrl,
 }: {
@@ -69,23 +69,28 @@ export async function createCustomerPortalSession({
 }
 
 /**
- * Pega informações da assinatura
+ * Get subscription by ID
  */
 export async function getSubscription(subscriptionId: string) {
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  return subscription;
+  return await stripe.subscriptions.retrieve(subscriptionId);
 }
 
 /**
- * Cancela uma assinatura
+ * Cancel subscription
  */
 export async function cancelSubscription(subscriptionId: string) {
-  const subscription = await stripe.subscriptions.cancel(subscriptionId);
-  return subscription;
+  return await stripe.subscriptions.cancel(subscriptionId);
 }
 
 /**
- * Verifica se uma assinatura está ativa
+ * Get customer by ID
+ */
+export async function getCustomer(customerId: string) {
+  return await stripe.customers.retrieve(customerId);
+}
+
+/**
+ * Check if subscription is active
  */
 export function isSubscriptionActive(status: string): boolean {
   return ['active', 'trialing'].includes(status);
