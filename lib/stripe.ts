@@ -9,25 +9,25 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   typescript: true,
 });
 
-// Helper: Create checkout session
+/**
+ * Cria uma sessão de checkout do Stripe
+ */
 export async function createCheckoutSession({
+  priceId,
   userId,
   userEmail,
-  priceId,
   successUrl,
   cancelUrl,
 }: {
+  priceId: string;
   userId: string;
   userEmail: string;
-  priceId: string;
   successUrl: string;
   cancelUrl: string;
 }) {
   const session = await stripe.checkout.sessions.create({
-    customer_email: userEmail,
-    client_reference_id: userId,
-    payment_method_types: ['card'],
     mode: 'subscription',
+    payment_method_types: ['card'],
     line_items: [
       {
         price: priceId,
@@ -36,15 +36,23 @@ export async function createCheckoutSession({
     ],
     success_url: successUrl,
     cancel_url: cancelUrl,
+    customer_email: userEmail,
     metadata: {
       userId,
+    },
+    subscription_data: {
+      metadata: {
+        userId,
+      },
     },
   });
 
   return session;
 }
 
-// Helper: Create customer portal session
+/**
+ * Cria um portal de gerenciamento de assinatura
+ */
 export async function createCustomerPortalSession({
   customerId,
   returnUrl,
@@ -60,29 +68,25 @@ export async function createCustomerPortalSession({
   return session;
 }
 
-// Helper: Get subscription status
-export async function getSubscriptionStatus(subscriptionId: string) {
+/**
+ * Pega informações da assinatura
+ */
+export async function getSubscription(subscriptionId: string) {
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  
-  return {
-    status: subscription.status,
-    currentPeriodEnd: subscription.current_period_end,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end,
-  };
-}
-
-// Helper: Cancel subscription
-export async function cancelSubscription(subscriptionId: string) {
-  const subscription = await stripe.subscriptions.update(subscriptionId, {
-    cancel_at_period_end: true,
-  });
-
   return subscription;
 }
 
-// Price IDs - Update these with your Stripe price IDs
-export const PRICE_IDS = {
-  BASIC: process.env.STRIPE_PRICE_ID_BASIC || 'price_xxxxx',
-  PRO: process.env.STRIPE_PRICE_ID_PRO || 'price_xxxxx',
-  ENTERPRISE: process.env.STRIPE_PRICE_ID_ENTERPRISE || 'price_xxxxx',
-} as const;
+/**
+ * Cancela uma assinatura
+ */
+export async function cancelSubscription(subscriptionId: string) {
+  const subscription = await stripe.subscriptions.cancel(subscriptionId);
+  return subscription;
+}
+
+/**
+ * Verifica se uma assinatura está ativa
+ */
+export function isSubscriptionActive(status: string): boolean {
+  return ['active', 'trialing'].includes(status);
+}
