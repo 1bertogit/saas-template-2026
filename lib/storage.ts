@@ -1,61 +1,69 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-if (!process.env.R2_ACCOUNT_ID) {
-  throw new Error('R2_ACCOUNT_ID is not set');
+if (!process.env.CLOUDFLARE_R2_ACCOUNT_ID) {
+  throw new Error('CLOUDFLARE_R2_ACCOUNT_ID is not set');
 }
 
-if (!process.env.R2_ACCESS_KEY_ID) {
-  throw new Error('R2_ACCESS_KEY_ID is not set');
+if (!process.env.CLOUDFLARE_R2_ACCESS_KEY_ID) {
+  throw new Error('CLOUDFLARE_R2_ACCESS_KEY_ID is not set');
 }
 
-if (!process.env.R2_SECRET_ACCESS_KEY) {
-  throw new Error('R2_SECRET_ACCESS_KEY is not set');
+if (!process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY) {
+  throw new Error('CLOUDFLARE_R2_SECRET_ACCESS_KEY is not set');
 }
 
-if (!process.env.R2_BUCKET_NAME) {
-  throw new Error('R2_BUCKET_NAME is not set');
+if (!process.env.CLOUDFLARE_R2_BUCKET_NAME) {
+  throw new Error('CLOUDFLARE_R2_BUCKET_NAME is not set');
 }
 
-// Initialize R2 client (S3-compatible)
+const ACCOUNT_ID = process.env.CLOUDFLARE_R2_ACCOUNT_ID;
+const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME;
+const PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL || `https://${BUCKET_NAME}.${ACCOUNT_ID}.r2.cloudflarestorage.com`;
+
+// Initialize R2 Client (S3-compatible)
 const r2Client = new S3Client({
   region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: `https://${ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
   },
 });
 
-const BUCKET_NAME = process.env.R2_BUCKET_NAME;
-const PUBLIC_URL = process.env.R2_PUBLIC_URL; // Optional: your custom domain or public R2 URL
+export interface UploadOptions {
+  file: File | Buffer;
+  key: string;
+  contentType?: string;
+  metadata?: Record<string, string>;
+}
 
 /**
- * Upload a file to R2
+ * Upload a file to Cloudflare R2
  */
-export async function uploadFile(
-  key: string,
-  body: Buffer | Uint8Array | Blob,
-  contentType?: string
-): Promise<{ key: string; url: string }> {
+export async function uploadFile({ file, key, contentType, metadata }: UploadOptions) {
+  const buffer = file instanceof File ? Buffer.from(await file.arrayBuffer()) : file;
+
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
-    Body: body,
+    Body: buffer,
     ContentType: contentType,
+    Metadata: metadata,
   });
 
   await r2Client.send(command);
 
-  const url = PUBLIC_URL ? `${PUBLIC_URL}/${key}` : await getPublicUrl(key);
-
-  return { key, url };
+  return {
+    key,
+    url: `${PUBLIC_URL}/${key}`,
+  };
 }
 
 /**
  * Delete a file from R2
  */
-export async function deleteFile(key: string): Promise<void> {
+export async function deleteFile(key: string) {
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -65,34 +73,32 @@ export async function deleteFile(key: string): Promise<void> {
 }
 
 /**
- * Get a signed URL for private file access (expires in 1 hour by default)
+ * Get a signed URL for private file access
+ * @param key - File key in R2
+ * @param expiresIn - Expiration time in seconds (default: 1 hour)
  */
-export async function getSignedDownloadUrl(key: string, expiresIn: number = 3600): Promise<string> {
+export async function getSignedUrlForFile(key: string, expiresIn: number = 3600) {
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
   });
 
-  return getSignedUrl(r2Client, command, { expiresIn });
+  const url = await getSignedUrl(r2Client, command, { expiresIn });
+  return url;
 }
 
 /**
- * Get public URL (if bucket is public)
+ * Get public URL for a file
  */
-export function getPublicUrl(key: string): string {
-  if (PUBLIC_URL) {
-    return `${PUBLIC_URL}/${key}`;
-  }
-  // Fallback to R2 default URL
-  return `https://${BUCKET_NAME}.${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
+export function getPublicUrl(key: string) {
+  return `${PUBLIC_URL}/${key}`;
 }
 
 /**
- * Generate a unique file key with timestamp and random string
+ * Generate a unique file key with timestamp
  */
-export function generateFileKey(userId: string, fileName: string): string {
+export function generateFileKey(userId: string, fileName: string) {
   const timestamp = Date.now();
-  const randomString = Math.random().toString(36).substring(2, 15);
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-  return `uploads/${userId}/${timestamp}-${randomString}-${sanitizedFileName}`;
+  return `${userId}/${timestamp}-${sanitizedFileName}`;
 }
