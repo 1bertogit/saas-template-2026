@@ -54,7 +54,8 @@
     "@upstash/ratelimit": "^2.0.5",
     "@sentry/nextjs": "^8.42.0",
     "@trigger.dev/sdk": "^3.3.0",
-    "@trigger.dev/nextjs": "^3.3.0"
+    "@trigger.dev/nextjs": "^3.3.0",
+    "svix": "^1.42.0"
   },
   "devDependencies": {
     "@types/node": "^22",
