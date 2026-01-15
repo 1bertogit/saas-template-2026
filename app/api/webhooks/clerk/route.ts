@@ -6,6 +6,11 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { processUserOnboarding } from '@/lib/jobs';
+import {
+  isWebhookProcessed,
+  markWebhookProcessed,
+  isWebhookTimestampValid,
+} from '@/lib/webhook-idempotency';
 
 export const runtime = 'nodejs';
 
@@ -27,11 +32,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing svix headers' }, { status: 400 });
   }
 
+  // Validate timestamp to prevent replay attacks (5 minute tolerance)
+  if (!isWebhookTimestampValid(svix_timestamp)) {
+    console.error('[Clerk Webhook] Timestamp validation failed');
+    return NextResponse.json({ error: 'Webhook timestamp invalid' }, { status: 400 });
+  }
+
   // Get body
   const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  // Verify webhook
+  // Verify webhook signature
   const wh = new Webhook(webhookSecret);
   let evt: WebhookEvent;
 
@@ -46,19 +57,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  console.log(`[Clerk Webhook] Received event: ${evt.type}`);
+  console.log(`[Clerk Webhook] Received event: ${evt.type} (${svix_id})`);
+
+  // Idempotency check - skip if already processed
+  const alreadyProcessed = await isWebhookProcessed(svix_id, 'clerk');
+  if (alreadyProcessed) {
+    console.log(`[Clerk Webhook] Skipping duplicate event: ${svix_id}`);
+    return NextResponse.json({ received: true, skipped: true });
+  }
 
   try {
     switch (evt.type) {
       // New user created
       case 'user.created': {
         const { id, email_addresses, first_name, last_name, image_url } = evt.data;
-        const primaryEmail = email_addresses.find((e) => e.id === evt.data.primary_email_address_id);
-        const email = primaryEmail?.email_address || email_addresses[0]?.email_address;
+        const primaryEmail = email_addresses?.find((e) => e.id === evt.data.primary_email_address_id);
+        const email = primaryEmail?.email_address || email_addresses?.[0]?.email_address;
         const name = [first_name, last_name].filter(Boolean).join(' ') || undefined;
 
         if (!email) {
           console.error('[Clerk Webhook] No email found for user:', id);
+          break;
+        }
+
+        // Check if user already exists (in case of race condition)
+        const existingUser = await db.query.users.findFirst({
+          where: eq(users.clerkId, id),
+        });
+
+        if (existingUser) {
+          console.log(`[Clerk Webhook] User already exists: ${email}`);
           break;
         }
 
@@ -86,8 +114,8 @@ export async function POST(req: Request) {
       // User updated
       case 'user.updated': {
         const { id, email_addresses, first_name, last_name, image_url } = evt.data;
-        const primaryEmail = email_addresses.find((e) => e.id === evt.data.primary_email_address_id);
-        const email = primaryEmail?.email_address || email_addresses[0]?.email_address;
+        const primaryEmail = email_addresses?.find((e) => e.id === evt.data.primary_email_address_id);
+        const email = primaryEmail?.email_address || email_addresses?.[0]?.email_address;
         const name = [first_name, last_name].filter(Boolean).join(' ') || undefined;
 
         if (email) {
@@ -111,12 +139,13 @@ export async function POST(req: Request) {
         const { id } = evt.data;
 
         if (id) {
-          // Soft delete or mark as deleted (cascade will handle related records)
           const deletedUser = await db.query.users.findFirst({
             where: eq(users.clerkId, id),
           });
 
           if (deletedUser) {
+            // Soft delete by marking as deleted (keeps audit trail)
+            // For hard delete, uncomment the line below
             await db.delete(users).where(eq(users.clerkId, id));
             console.log(`[Clerk Webhook] User deleted: ${deletedUser.email}`);
           }
@@ -127,6 +156,9 @@ export async function POST(req: Request) {
       default:
         console.log(`[Clerk Webhook] Unhandled event type: ${evt.type}`);
     }
+
+    // Mark event as processed for idempotency
+    await markWebhookProcessed(svix_id, 'clerk');
 
     return NextResponse.json({ received: true });
   } catch (error) {

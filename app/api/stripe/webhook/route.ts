@@ -12,6 +12,7 @@ import {
   retryFailedPayment,
   processSubscriptionCancellation,
 } from '@/lib/jobs';
+import { isWebhookProcessed, markWebhookProcessed } from '@/lib/webhook-idempotency';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -97,7 +98,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Webhook error: ${message}` }, { status: 400 });
   }
 
-  console.log(`[Stripe Webhook] Received event: ${event.type}`);
+  console.log(`[Stripe Webhook] Received event: ${event.type} (${event.id})`);
+
+  // Idempotency check - skip if already processed
+  const alreadyProcessed = await isWebhookProcessed(event.id, 'stripe');
+  if (alreadyProcessed) {
+    console.log(`[Stripe Webhook] Skipping duplicate event: ${event.id}`);
+    return NextResponse.json({ received: true, skipped: true });
+  }
 
   try {
     switch (event.type) {
@@ -264,13 +272,14 @@ export async function POST(req: Request) {
 
           console.log(`[Stripe Webhook] Payment failed email sent to ${user.email}, attempt ${attemptCount}`);
 
-          // Schedule retry job if not too many attempts
-          if (attemptCount < 4 && subscriptionId && invoice.id) {
+          // Schedule retry job if not too many attempts (max 3 to match job config)
+          if (attemptCount < 3 && subscriptionId && invoice.id) {
             await retryFailedPayment.trigger({
               subscriptionId,
               invoiceId: invoice.id,
               attemptNumber: attemptCount,
               userId: user.clerkId,
+              invoiceAmount: invoice.amount_due,
             });
           }
         }
@@ -302,6 +311,9 @@ export async function POST(req: Request) {
       default:
         console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
     }
+
+    // Mark event as processed for idempotency
+    await markWebhookProcessed(event.id, 'stripe');
 
     return NextResponse.json({ received: true });
   } catch (error) {

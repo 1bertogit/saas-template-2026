@@ -73,18 +73,20 @@ export const retryFailedPayment = task({
     minTimeoutInMs: 60000, // Wait 1 minute between retries
     maxTimeoutInMs: 300000, // Max 5 minutes
     factor: 2,
+    randomize: true, // Add jitter to prevent thundering herd
   },
   run: async (payload: {
     subscriptionId: string;
     invoiceId: string;
     attemptNumber: number;
     userId: string;
+    invoiceAmount: number;
   }) => {
     if (!stripe) {
       return { success: false, reason: 'stripe_not_configured' };
     }
 
-    const { subscriptionId, invoiceId, attemptNumber, userId } = payload;
+    const { subscriptionId, invoiceId, attemptNumber, userId, invoiceAmount } = payload;
 
     console.log(`[RetryPayment] Retrying payment for subscription ${subscriptionId}, attempt ${attemptNumber}`);
 
@@ -109,13 +111,15 @@ export const retryFailedPayment = task({
       });
 
       if (user) {
+        // Calculate next retry with exponential backoff (2^attempt minutes, max 30 min)
+        const backoffMinutes = Math.min(Math.pow(2, attemptNumber), 30);
         const nextRetry = new Date();
-        nextRetry.setMinutes(nextRetry.getMinutes() + Math.pow(2, attemptNumber) * 60);
+        nextRetry.setMinutes(nextRetry.getMinutes() + backoffMinutes);
 
         await sendPaymentFailedEmail.trigger({
           email: user.email,
           name: user.name || 'Cliente',
-          amount: 0, // Would get from invoice
+          amount: invoiceAmount,
           retryDate: attemptNumber < 3 ? formatDate(nextRetry) : undefined,
         });
       }

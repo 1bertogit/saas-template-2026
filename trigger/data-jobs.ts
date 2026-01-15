@@ -2,8 +2,35 @@ import { task, schedules } from '@trigger.dev/sdk/v3';
 import { db } from '@/lib/db';
 import { users, subscriptions, usage } from '@/lib/db/schema';
 import { eq, lt, and } from 'drizzle-orm';
-import { uploadToR2, deleteFromR2 } from '@/lib/storage';
+import { uploadToR2 } from '@/lib/storage';
 import { sendWelcomeEmail } from './email-jobs';
+
+// Helper function to escape CSV values properly
+function escapeCsvValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  // Convert to string
+  let str: string;
+  if (value instanceof Date) {
+    str = value.toISOString();
+  } else if (typeof value === 'object') {
+    str = JSON.stringify(value);
+  } else {
+    str = String(value);
+  }
+
+  // Check if escaping is needed
+  const needsEscaping = str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r');
+
+  if (needsEscaping) {
+    // Escape double quotes by doubling them and wrap in quotes
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+
+  return str;
+}
 
 // Process large data exports (CSV/JSON)
 export const processDataExport = task({
@@ -72,14 +99,14 @@ export const processDataExport = task({
       contentType = 'application/json';
       fileExtension = 'json';
     } else {
-      // CSV format
+      // CSV format with proper escaping
       if (exportData.length === 0) {
         content = '';
       } else {
         const headers = Object.keys(exportData[0] || {}).join(',');
         const rows = exportData.map((row) =>
           Object.values(row)
-            .map((v) => (typeof v === 'string' ? `"${v}"` : v))
+            .map((v) => escapeCsvValue(v))
             .join(',')
         );
         content = [headers, ...rows].join('\n');
