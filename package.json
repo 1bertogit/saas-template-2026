@@ -18,7 +18,9 @@
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "trigger:dev": "npx trigger.dev@latest dev"
+    "trigger:dev": "npx trigger.dev@latest dev",
+    "validate": "npm run type-check && npm run lint && npm run test -- --run",
+    "prepare": "simple-git-hooks"
   },
   "dependencies": {
     "next": "^15.1.0",
@@ -86,7 +88,22 @@
     "@testing-library/dom": "^10.4.0",
     "jsdom": "^25.0.1",
     "@playwright/test": "^1.49.1",
-    "@vitejs/plugin-react": "^4.3.4"
+    "@vitejs/plugin-react": "^4.3.4",
+    "simple-git-hooks": "^2.11.1",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.4.2"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "bash -c 'npm run type-check'"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   },
   "engines": {
     "node": ">=20.0.0",

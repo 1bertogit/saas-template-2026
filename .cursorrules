@@ -1,0 +1,163 @@
+# SaaS Template 2026 - Cursor/Claude Rules
+
+## Project Architecture
+
+This is a Next.js 15 App Router project with React 19 and TypeScript 5.
+Always use the App Router patterns, never Pages Router.
+
+### Tech Stack (DO NOT change without explicit permission)
+- **Framework**: Next.js 15 with App Router
+- **Database**: Neon PostgreSQL with Drizzle ORM
+- **Auth**: Clerk (not NextAuth, not Auth.js)
+- **Payments**: Stripe
+- **Storage**: Cloudflare R2
+- **Email**: Resend with React Email
+- **AI**: Vercel AI SDK + OpenRouter
+- **Cache**: Upstash Redis
+- **Jobs**: Trigger.dev v3
+- **Monitoring**: Sentry + PostHog
+
+## Code Style Rules
+
+### Components
+- Always use existing components from `components/ui/` (shadcn/ui)
+- Never create new UI primitives - extend existing ones
+- Use `cn()` from `lib/utils` for className merging
+- Prefer Server Components, use 'use client' only when necessary
+
+### Database
+- All database operations go through Drizzle ORM
+- Schema lives in `lib/db/schema.ts`
+- Use prepared statements for performance
+- Never write raw SQL queries
+
+### API Routes
+- All routes must check authentication with `await auth()`
+- Apply rate limiting using `lib/rate-limit.ts`
+- Return proper error responses with status codes
+- Use Zod for request validation
+
+### Security (STRICT)
+- NEVER hardcode API keys, secrets, or credentials
+- ALWAYS use environment variables via `process.env`
+- NEVER commit `.env.local` or any env file with real values
+- ALWAYS validate and sanitize user input
+- ALWAYS use webhook signature verification
+- ALWAYS escape data before CSV/PDF exports
+
+### TypeScript
+- Strict mode is enabled - no `any` types
+- Export types from the same file as implementation
+- Use Zod schemas for runtime validation
+- Prefer `interface` for objects, `type` for unions
+
+### Error Handling
+- Use Sentry for error tracking in production
+- Provide user-friendly error messages
+- Log detailed errors server-side only
+- Never expose stack traces to clients
+
+### Testing
+- Unit tests with Vitest in `tests/unit/`
+- Integration tests in `tests/integration/`
+- E2E tests with Playwright in `tests/e2e/`
+- Mock external services, never call real APIs in tests
+
+## File Structure
+
+```
+app/                    # Next.js App Router
+├── (auth)/            # Auth pages (sign-in, sign-up)
+├── (dashboard)/       # Protected dashboard pages
+├── (marketing)/       # Public marketing pages
+├── api/               # API routes
+components/
+├── ui/                # shadcn/ui components (don't modify)
+├── analytics/         # GTM, Meta Pixel, PostHog
+├── seo/               # JSON-LD, metadata
+lib/
+├── db/                # Drizzle schema and queries
+├── config/            # Feature flags, constants
+├── seo/               # SEO utilities
+trigger/               # Background jobs
+tests/                 # All test files
+```
+
+## Common Patterns
+
+### Creating a new API route
+```typescript
+import { auth } from '@clerk/nextjs/server';
+import { rateLimit } from '@/lib/rate-limit';
+import { NextResponse } from 'next/server';
+
+export async function POST(req: Request) {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const rateLimitResult = await rateLimit(userId, 'api');
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
+  // Your logic here
+}
+```
+
+### Creating a new background job
+```typescript
+import { task } from '@trigger.dev/sdk/v3';
+
+export const myJob = task({
+  id: 'my-job',
+  retry: { maxAttempts: 3 },
+  run: async (payload: { /* typed payload */ }) => {
+    // Job logic
+  },
+});
+```
+
+### Database query
+```typescript
+import { db } from '@/lib/db';
+import { users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+
+const user = await db.query.users.findFirst({
+  where: eq(users.id, userId),
+});
+```
+
+## Forbidden Patterns
+
+- ❌ `// @ts-ignore` or `// @ts-expect-error`
+- ❌ `any` type without justification
+- ❌ `console.log` in production code (use proper logging)
+- ❌ Inline styles (use Tailwind)
+- ❌ `var` keyword (use `const` or `let`)
+- ❌ Callback patterns (use async/await)
+- ❌ Direct DOM manipulation in React
+- ❌ Hardcoded URLs (use environment variables)
+
+## Quality Gates
+
+Before committing:
+1. `npm run type-check` must pass
+2. `npm run lint` must pass
+3. `npm run test` must pass
+4. No hardcoded secrets in code
+
+## Environment Variables
+
+Required for production:
+- `DATABASE_URL` - Neon connection string
+- `CLERK_*` - Clerk authentication
+- `STRIPE_*` - Stripe payments
+- `R2_*` - Cloudflare R2 storage
+- `RESEND_API_KEY` - Email service
+- `UPSTASH_*` - Redis cache
+- `SENTRY_*` - Error monitoring
+
+See `.env.example` for full list.
