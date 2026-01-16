@@ -1,0 +1,173 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "error": "Ocorreu um erro",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "actions": "Ações",
+    "settings": "Configurações",
+    "profile": "Perfil",
+    "logout": "Sair",
+    "login": "Entrar",
+    "signup": "Cadastrar",
+    "submit": "Enviar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "confirm": "Confirmar",
+    "close": "Fechar"
+  },
+  "nav": {
+    "home": "Início",
+    "dashboard": "Dashboard",
+    "pricing": "Preços",
+    "about": "Sobre",
+    "contact": "Contato",
+    "docs": "Documentação",
+    "blog": "Blog"
+  },
+  "auth": {
+    "signIn": "Entrar",
+    "signUp": "Criar conta",
+    "signOut": "Sair",
+    "forgotPassword": "Esqueceu a senha?",
+    "resetPassword": "Redefinir senha",
+    "email": "E-mail",
+    "password": "Senha",
+    "confirmPassword": "Confirmar senha",
+    "rememberMe": "Lembrar de mim",
+    "orContinueWith": "Ou continue com",
+    "noAccount": "Não tem uma conta?",
+    "hasAccount": "Já tem uma conta?"
+  },
+  "dashboard": {
+    "welcome": "Bem-vindo de volta",
+    "overview": "Visão geral",
+    "analytics": "Análises",
+    "reports": "Relatórios",
+    "users": "Usuários",
+    "storage": "Armazenamento",
+    "billing": "Faturamento",
+    "team": "Equipe",
+    "integrations": "Integrações"
+  },
+  "pricing": {
+    "title": "Escolha seu plano",
+    "subtitle": "Comece gratuitamente, escale quando precisar",
+    "monthly": "Mensal",
+    "yearly": "Anual",
+    "save": "Economize {percent}%",
+    "free": "Grátis",
+    "pro": "Pro",
+    "enterprise": "Empresarial",
+    "popular": "Mais popular",
+    "currentPlan": "Plano atual",
+    "upgrade": "Fazer upgrade",
+    "downgrade": "Fazer downgrade",
+    "managePlan": "Gerenciar plano",
+    "features": {
+      "unlimited": "Ilimitado",
+      "support": "Suporte {type}",
+      "users": "{count} usuários",
+      "storage": "{amount} de armazenamento",
+      "api": "Acesso à API"
+    }
+  },
+  "billing": {
+    "title": "Faturamento",
+    "currentPlan": "Plano atual",
+    "nextBilling": "Próxima cobrança",
+    "paymentMethod": "Método de pagamento",
+    "updatePayment": "Atualizar pagamento",
+    "invoices": "Faturas",
+    "downloadInvoice": "Baixar fatura",
+    "cancelSubscription": "Cancelar assinatura"
+  },
+  "settings": {
+    "title": "Configurações",
+    "general": "Geral",
+    "appearance": "Aparência",
+    "theme": "Tema",
+    "light": "Claro",
+    "dark": "Escuro",
+    "system": "Sistema",
+    "language": "Idioma",
+    "notifications": "Notificações",
+    "security": "Segurança",
+    "privacy": "Privacidade",
+    "data": "Dados",
+    "exportData": "Exportar dados",
+    "deleteAccount": "Excluir conta"
+  },
+  "errors": {
+    "notFound": "Página não encontrada",
+    "unauthorized": "Não autorizado",
+    "forbidden": "Acesso negado",
+    "serverError": "Erro interno do servidor",
+    "networkError": "Erro de conexão",
+    "tryAgain": "Tentar novamente",
+    "goHome": "Voltar ao início"
+  },
+  "success": {
+    "saved": "Salvo com sucesso",
+    "updated": "Atualizado com sucesso",
+    "deleted": "Excluído com sucesso",
+    "sent": "Enviado com sucesso"
+  },
+  "landing": {
+    "hero": {
+      "title": "Construa seu SaaS mais rápido",
+      "subtitle": "Template completo com autenticação, pagamentos, storage e IA. Pronto para produção.",
+      "cta": "Começar agora",
+      "ctaSecondary": "Ver demonstração"
+    },
+    "features": {
+      "title": "Tudo que você precisa",
+      "subtitle": "Stack moderna e completa para 2026",
+      "auth": {
+        "title": "Autenticação",
+        "description": "Login social, MFA e gerenciamento de sessões com Clerk"
+      },
+      "payments": {
+        "title": "Pagamentos",
+        "description": "Assinaturas recorrentes e checkout com Stripe"
+      },
+      "storage": {
+        "title": "Armazenamento",
+        "description": "Upload de arquivos com Cloudflare R2"
+      },
+      "ai": {
+        "title": "Inteligência Artificial",
+        "description": "Chat e geração de conteúdo com Vercel AI SDK"
+      },
+      "email": {
+        "title": "E-mails",
+        "description": "E-mails transacionais com Resend e React Email"
+      },
+      "analytics": {
+        "title": "Análises",
+        "description": "Product analytics com PostHog"
+      }
+    },
+    "cta": {
+      "title": "Pronto para começar?",
+      "subtitle": "Comece gratuitamente hoje",
+      "button": "Criar conta grátis"
+    }
+  },
+  "footer": {
+    "product": "Produto",
+    "company": "Empresa",
+    "legal": "Legal",
+    "terms": "Termos de uso",
+    "privacy": "Política de privacidade",
+    "cookies": "Política de cookies",
+    "copyright": "Todos os direitos reservados"
+  }
+}

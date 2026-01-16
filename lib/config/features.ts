@@ -22,6 +22,10 @@ export const FEATURES = {
   GTM_ENABLED: !!process.env.NEXT_PUBLIC_GTM_ID,
   SEARCH_CONSOLE_ENABLED: !!process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   META_PIXEL_ENABLED: !!process.env.NEXT_PUBLIC_META_PIXEL_ID,
+
+  // UI/UX
+  DARK_MODE_ENABLED: true, // Always available via next-themes
+  I18N_ENABLED: true, // Always available via next-intl
 } as const;
 
 export type FeatureKey = keyof typeof FEATURES;

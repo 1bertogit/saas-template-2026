@@ -3,8 +3,13 @@
 import { useEffect } from 'react';
 import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
+import { ThemeProvider } from 'next-themes';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+interface ProvidersProps {
+  children: React.ReactNode;
+}
+
+export function Providers({ children }: ProvidersProps) {
   const apiKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   const host = process.env.NEXT_PUBLIC_POSTHOG_HOST;
 
@@ -17,7 +22,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => posthog.shutdown();
   }, [apiKey, host]);
 
-  if (!apiKey || !host) return children;
+  const content = (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      {children}
+    </ThemeProvider>
+  );
 
-  return <PostHogProvider client={posthog}>{children}</PostHogProvider>;
+  if (!apiKey || !host) return content;
+
+  return <PostHogProvider client={posthog}>{content}</PostHogProvider>;
 }
