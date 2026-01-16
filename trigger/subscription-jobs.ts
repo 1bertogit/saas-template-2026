@@ -49,7 +49,7 @@ export const subscriptionRenewalReminder = schedules.task({
       });
 
       if (user && sub.stripeCurrentPeriodEnd) {
-        console.log(`[RenewalReminder] Subscription ${sub.id} expires on ${sub.stripeCurrentPeriodEnd}`);
+        console.warn(`[RenewalReminder] Subscription ${sub.id} expires on ${sub.stripeCurrentPeriodEnd}`);
         // In production, send reminder email here
         reminded++;
       }
@@ -88,14 +88,14 @@ export const retryFailedPayment = task({
 
     const { subscriptionId, invoiceId, attemptNumber, userId, invoiceAmount } = payload;
 
-    console.log(`[RetryPayment] Retrying payment for subscription ${subscriptionId}, attempt ${attemptNumber}`);
+    console.warn(`[RetryPayment] Retrying payment for subscription ${subscriptionId}, attempt ${attemptNumber}`);
 
     try {
       // Try to pay the invoice
       const invoice = await stripe.invoices.pay(invoiceId);
 
       if (invoice.status === 'paid') {
-        console.log(`[RetryPayment] Payment succeeded for ${subscriptionId}`);
+        console.warn(`[RetryPayment] Payment succeeded for ${subscriptionId}`);
         return { success: true, invoiceId, status: 'paid' };
       }
 
@@ -161,7 +161,7 @@ export const cleanupExpiredTrials = schedules.task({
           .where(eq(subscriptions.id, trial.id));
 
         updated++;
-        console.log(`[CleanupTrials] Expired trial ${trial.id}`);
+        console.warn(`[CleanupTrials] Expired trial ${trial.id}`);
       } catch (error) {
         console.error(`[CleanupTrials] Failed to update ${trial.id}:`, error);
       }
@@ -197,7 +197,7 @@ export const processSubscriptionCancellation = task({
     });
 
     if (!user) {
-      console.log(`[CancellationProcess] User not found: ${userId}`);
+      console.warn(`[CancellationProcess] User not found: ${userId}`);
       return { success: false, reason: 'user_not_found' };
     }
 
@@ -209,7 +209,7 @@ export const processSubscriptionCancellation = task({
       endDate: formatDate(endDate),
     });
 
-    console.log(`[CancellationProcess] Processed cancellation for ${user.email}`);
+    console.warn(`[CancellationProcess] Processed cancellation for ${user.email}`);
 
     return {
       success: true,
@@ -256,7 +256,7 @@ export const syncSubscriptionsWithStripe = schedules.task({
             .where(eq(subscriptions.id, sub.id));
 
           updated++;
-          console.log(`[SyncStripe] Updated subscription ${sub.id}: ${sub.status} -> ${stripeSub.status}`);
+          console.warn(`[SyncStripe] Updated subscription ${sub.id}: ${sub.status} -> ${stripeSub.status}`);
         }
       } catch (error) {
         errors++;
