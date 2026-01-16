@@ -12,6 +12,7 @@
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
     "type-check": "tsc --noEmit",
+    "setup": "node scripts/setup.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
@@ -46,6 +47,8 @@
     "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.2",
     "@radix-ui/react-switch": "^1.1.1",
+    "@radix-ui/react-avatar": "^1.1.1",
+    "@radix-ui/react-label": "^2.1.0",
     "sonner": "^1.7.1",
     "ai": "^4.0.0",
     "@ai-sdk/openai": "^1.0.0",
@@ -56,6 +59,12 @@
     "@trigger.dev/sdk": "^3.3.0",
     "@trigger.dev/nextjs": "^3.3.0",
     "svix": "^1.42.0"
+  },
+  "optionalDependencies": {
+    "ai": "^4.0.38",
+    "@ai-sdk/openai": "^1.0.9",
+    "@ai-sdk/anthropic": "^1.0.6",
+    "@ai-sdk/google": "^1.0.9"
   },
   "devDependencies": {
     "@types/node": "^22",
