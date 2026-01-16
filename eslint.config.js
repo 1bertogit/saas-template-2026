@@ -1,0 +1,46 @@
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { FlatCompat } from '@eslint/eslintrc';
+import js from '@eslint/js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+  recommendedConfig: js.configs.recommended,
+});
+
+const eslintConfig = [
+  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  {
+    ignores: [
+      '.next/**',
+      'node_modules/**',
+      'coverage/**',
+      'playwright-report/**',
+      '*.config.js',
+      '*.config.ts',
+    ],
+  },
+  {
+    rules: {
+      // Allow unused vars starting with underscore
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      // Allow any in specific cases
+      '@typescript-eslint/no-explicit-any': 'warn',
+      // Prefer const
+      'prefer-const': 'error',
+      // No console in production
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+];
+
+export default eslintConfig;
