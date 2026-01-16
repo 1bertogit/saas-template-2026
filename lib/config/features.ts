@@ -17,6 +17,10 @@ export const FEATURES = {
 
   // Rate Limiting
   RATE_LIMIT_ENABLED: !!process.env.UPSTASH_REDIS_REST_URL,
+
+  // Marketing & SEO
+  GTM_ENABLED: !!process.env.NEXT_PUBLIC_GTM_ID,
+  SEARCH_CONSOLE_ENABLED: !!process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
 } as const;
 
 export type FeatureKey = keyof typeof FEATURES;
