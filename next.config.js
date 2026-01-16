@@ -1,4 +1,7 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -39,9 +42,12 @@ const sentryWebpackPluginOptions = {
   disable: process.env.NODE_ENV !== 'production',
 };
 
+// Apply plugins in order: next-intl first, then Sentry
+const withIntlConfig = withNextIntl(nextConfig);
+
 // Export with or without Sentry based on configuration
 const exportConfig = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN
-  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
-  : nextConfig;
+  ? withSentryConfig(withIntlConfig, sentryWebpackPluginOptions)
+  : withIntlConfig;
 
 export default exportConfig;
