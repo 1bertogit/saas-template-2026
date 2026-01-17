@@ -21,6 +21,7 @@ export function Providers({ children }: ProvidersProps) {
     });
     return () => {
       // PostHog cleanup is handled automatically
+      // Note: reset() should only be called on user logout, not component unmount
     };
   }, [apiKey, host]);
 

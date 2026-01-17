@@ -12,11 +12,6 @@ if (SENTRY_DSN) {
     // Environment
     environment: process.env.NODE_ENV,
 
-    // Server-side specific options
-    integrations: [
-      Sentry.prismaIntegration(), // If using Prisma
-    ],
-
     // Filter out expected errors
     ignoreErrors: [
       'NEXT_NOT_FOUND',
