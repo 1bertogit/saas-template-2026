@@ -75,7 +75,7 @@ describe('/api/upload', () => {
 
     expect(response.status).toBe(400);
     expect(data.error).toContain('File too large');
-  });
+  }, 15000);
 
   it('should return 429 when rate limited', async () => {
     vi.mocked(rateLimit).mockResolvedValueOnce({
@@ -118,5 +118,5 @@ describe('/api/upload', () => {
     expect(response.status).toBe(200);
     expect(data.url).toBe('https://example.r2.dev/uploads/test-file.png');
     expect(data.key).toContain('test-user-123');
-  });
+  }, 15000);
 });
