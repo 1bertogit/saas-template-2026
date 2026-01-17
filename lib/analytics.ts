@@ -34,7 +34,7 @@ export async function trackEvent({
     properties,
   });
 
-  await client.flushAsync();
+  await client.flush();
 }
 
 export async function identifyUser({
@@ -52,7 +52,7 @@ export async function identifyUser({
     properties,
   });
 
-  await client.flushAsync();
+  await client.flush();
 }
 
 export const EVENTS = {

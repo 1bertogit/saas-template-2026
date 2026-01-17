@@ -91,7 +91,7 @@ export async function POST(req: Request) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret!);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('[Stripe Webhook] Signature verification failed:', message);
