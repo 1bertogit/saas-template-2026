@@ -2,20 +2,30 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { generateText as generateTextAI, streamText, CoreMessage } from 'ai';
 
-// OpenRouter provider (compatible with OpenAI SDK)
-const openrouter = createOpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: 'https://openrouter.ai/api/v1',
-  headers: {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    'X-Title': process.env.NEXT_PUBLIC_APP_NAME || 'SaaS Template 2026',
-  },
-});
+// Lazy initialization to avoid issues during build
+let openrouterClient: ReturnType<typeof createOpenAI> | null = null;
+let anthropicClient: ReturnType<typeof createAnthropic> | null = null;
 
-// Direct Anthropic provider (for when you have direct API access)
-const anthropic = process.env.ANTHROPIC_API_KEY
-  ? createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  : null;
+function getOpenRouterClient() {
+  if (!openrouterClient) {
+    openrouterClient = createOpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY || '',
+      baseURL: 'https://openrouter.ai/api/v1',
+      headers: {
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+        'X-Title': process.env.NEXT_PUBLIC_APP_NAME || 'SaaS Template 2026',
+      },
+    });
+  }
+  return openrouterClient;
+}
+
+function getAnthropicClient() {
+  if (!anthropicClient && process.env.ANTHROPIC_API_KEY) {
+    anthropicClient = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return anthropicClient;
+}
 
 export const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-3.5-sonnet';
 
@@ -23,12 +33,14 @@ type AIProvider = 'openrouter' | 'anthropic';
 
 function getModel(provider: AIProvider, modelId: string) {
   switch (provider) {
-    case 'anthropic':
-      if (!anthropic) throw new Error('Anthropic API key not configured');
-      return anthropic(modelId.replace('anthropic/', ''));
+    case 'anthropic': {
+      const client = getAnthropicClient();
+      if (!client) throw new Error('Anthropic API key not configured');
+      return client(modelId.replace('anthropic/', ''));
+    }
     case 'openrouter':
     default:
-      return openrouter(modelId);
+      return getOpenRouterClient()(modelId);
   }
 }
 
