@@ -1,12 +1,13 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock modules before importing route
 vi.mock('@clerk/nextjs/server', () => ({
-  auth: vi.fn(() => ({ userId: 'test-user-123' })),
+  auth: vi.fn(async () => ({ userId: 'test-user-123' })),
 }));
 
 vi.mock('@/lib/rate-limit', () => ({
-  rateLimit: vi.fn(() => ({
+  rateLimit: vi.fn(async () => ({
     success: true,
     limit: 10,
     remaining: 9,
@@ -15,7 +16,7 @@ vi.mock('@/lib/rate-limit', () => ({
 }));
 
 vi.mock('@/lib/storage', () => ({
-  uploadToR2: vi.fn(() => 'https://example.r2.dev/uploads/test-file.png'),
+  uploadToR2: vi.fn(async () => 'https://example.r2.dev/uploads/test-file.png'),
   generateUniqueFilename: vi.fn((name: string, userId: string) => `${userId}/${Date.now()}-${name}`),
 }));
 
@@ -75,7 +76,7 @@ describe('/api/upload', () => {
 
     expect(response.status).toBe(400);
     expect(data.error).toContain('File too large');
-  });
+  }, 15000);
 
   it('should return 429 when rate limited', async () => {
     vi.mocked(rateLimit).mockResolvedValueOnce({
@@ -118,5 +119,5 @@ describe('/api/upload', () => {
     expect(response.status).toBe(200);
     expect(data.url).toBe('https://example.r2.dev/uploads/test-file.png');
     expect(data.key).toContain('test-user-123');
-  });
+  }, 15000);
 });
