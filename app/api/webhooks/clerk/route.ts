@@ -57,12 +57,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  console.log(`[Clerk Webhook] Received event: ${evt.type} (${svix_id})`);
+  console.warn(`[Clerk Webhook] Received event: ${evt.type} (${svix_id})`);
 
   // Idempotency check - skip if already processed
   const alreadyProcessed = await isWebhookProcessed(svix_id, 'clerk');
   if (alreadyProcessed) {
-    console.log(`[Clerk Webhook] Skipping duplicate event: ${svix_id}`);
+    console.warn(`[Clerk Webhook] Skipping duplicate event: ${svix_id}`);
     return NextResponse.json({ received: true, skipped: true });
   }
 
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
         });
 
         if (existingUser) {
-          console.log(`[Clerk Webhook] User already exists: ${email}`);
+          console.warn(`[Clerk Webhook] User already exists: ${email}`);
           break;
         }
 
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
           imageUrl: image_url,
         });
 
-        console.log(`[Clerk Webhook] User created in DB: ${email}`);
+        console.warn(`[Clerk Webhook] User created in DB: ${email}`);
 
         // Trigger onboarding job (welcome email, usage init, etc)
         await processUserOnboarding.trigger({
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
           name: name || 'Novo usuário',
         });
 
-        console.log(`[Clerk Webhook] Onboarding job triggered for: ${email}`);
+        console.warn(`[Clerk Webhook] Onboarding job triggered for: ${email}`);
         break;
       }
 
@@ -129,7 +129,7 @@ export async function POST(req: Request) {
             })
             .where(eq(users.clerkId, id));
 
-          console.log(`[Clerk Webhook] User updated: ${email}`);
+          console.warn(`[Clerk Webhook] User updated: ${email}`);
         }
         break;
       }
@@ -147,14 +147,14 @@ export async function POST(req: Request) {
             // Soft delete by marking as deleted (keeps audit trail)
             // For hard delete, uncomment the line below
             await db.delete(users).where(eq(users.clerkId, id));
-            console.log(`[Clerk Webhook] User deleted: ${deletedUser.email}`);
+            console.warn(`[Clerk Webhook] User deleted: ${deletedUser.email}`);
           }
         }
         break;
       }
 
       default:
-        console.log(`[Clerk Webhook] Unhandled event type: ${evt.type}`);
+        console.warn(`[Clerk Webhook] Unhandled event type: ${evt.type}`);
     }
 
     // Mark event as processed for idempotency

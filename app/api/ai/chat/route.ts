@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       messages,
       onFinish: ({ text: _text, usage }) => {
         // Track AI usage for analytics/billing
-        console.log('AI generation completed', {
+        console.warn('AI generation completed', {
           userId,
           promptTokens: usage.promptTokens,
           completionTokens: usage.completionTokens,

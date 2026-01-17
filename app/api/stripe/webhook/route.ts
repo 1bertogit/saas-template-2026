@@ -98,12 +98,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Webhook error: ${message}` }, { status: 400 });
   }
 
-  console.log(`[Stripe Webhook] Received event: ${event.type} (${event.id})`);
+  console.warn(`[Stripe Webhook] Received event: ${event.type} (${event.id})`);
 
   // Idempotency check - skip if already processed
   const alreadyProcessed = await isWebhookProcessed(event.id, 'stripe');
   if (alreadyProcessed) {
-    console.log(`[Stripe Webhook] Skipping duplicate event: ${event.id}`);
+    console.warn(`[Stripe Webhook] Skipping duplicate event: ${event.id}`);
     return NextResponse.json({ received: true, skipped: true });
   }
 
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
               amount,
               periodEnd: formatDate(subscription.current_period_end),
             });
-            console.log(`[Stripe Webhook] Subscription email triggered for ${result.user.email}`);
+            console.warn(`[Stripe Webhook] Subscription email triggered for ${result.user.email}`);
           }
         }
         break;
@@ -172,7 +172,7 @@ export async function POST(req: Request) {
               plan: plan.charAt(0).toUpperCase() + plan.slice(1),
               endDate: new Date(subscription.current_period_end * 1000),
             });
-            console.log(`[Stripe Webhook] Cancellation scheduled for ${result.user.email}`);
+            console.warn(`[Stripe Webhook] Cancellation scheduled for ${result.user.email}`);
           }
         }
         break;
@@ -204,7 +204,7 @@ export async function POST(req: Request) {
               plan: plan.charAt(0).toUpperCase() + plan.slice(1),
               endDate: formatDate(subscription.current_period_end),
             });
-            console.log(`[Stripe Webhook] Cancellation email sent to ${user.email}`);
+            console.warn(`[Stripe Webhook] Cancellation email sent to ${user.email}`);
           }
         }
         break;
@@ -217,7 +217,7 @@ export async function POST(req: Request) {
         const subscriptionId = invoice.subscription as string;
 
         if (subscriptionId) {
-          console.log(`[Stripe Webhook] Invoice paid for subscription ${subscriptionId}`);
+          console.warn(`[Stripe Webhook] Invoice paid for subscription ${subscriptionId}`);
 
           // Update subscription status if it was past_due
           const existingSub = await db.query.subscriptions.findFirst({
@@ -270,7 +270,7 @@ export async function POST(req: Request) {
             retryDate: nextRetry,
           });
 
-          console.log(`[Stripe Webhook] Payment failed email sent to ${user.email}, attempt ${attemptCount}`);
+          console.warn(`[Stripe Webhook] Payment failed email sent to ${user.email}, attempt ${attemptCount}`);
 
           // Schedule retry job if not too many attempts (max 3 to match job config)
           if (attemptCount < 3 && subscriptionId && invoice.id) {
@@ -289,7 +289,7 @@ export async function POST(req: Request) {
       // Customer created (for future use)
       case 'customer.created': {
         const customer = event.data.object as Stripe.Customer;
-        console.log(`[Stripe Webhook] Customer created: ${customer.id}`);
+        console.warn(`[Stripe Webhook] Customer created: ${customer.id}`);
         break;
       }
 
@@ -301,7 +301,7 @@ export async function POST(req: Request) {
         if (userId) {
           const user = await getUserByClerkId(userId);
           if (user && subscription.trial_end) {
-            console.log(`[Stripe Webhook] Trial ending soon for ${user.email} on ${formatDate(subscription.trial_end)}`);
+            console.warn(`[Stripe Webhook] Trial ending soon for ${user.email} on ${formatDate(subscription.trial_end)}`);
             // Could send a "trial ending" email here
           }
         }
@@ -309,7 +309,7 @@ export async function POST(req: Request) {
       }
 
       default:
-        console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+        console.warn(`[Stripe Webhook] Unhandled event type: ${event.type}`);
     }
 
     // Mark event as processed for idempotency

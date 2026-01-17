@@ -66,7 +66,7 @@ export async function processWebhookWithIdempotency<T>(
   const alreadyProcessed = await isWebhookProcessed(eventId, prefix);
 
   if (alreadyProcessed) {
-    console.log(`[Idempotency] Skipping duplicate ${prefix}:${eventId}`);
+    console.warn(`[Idempotency] Skipping duplicate ${prefix}:${eventId}`);
     return { processed: false, skipped: true };
   }
 
