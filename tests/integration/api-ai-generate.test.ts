@@ -19,6 +19,7 @@ describe('/api/ai/generate', () => {
   });
 
   it('should reject unauthorized requests', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(auth).mockReturnValueOnce({ userId: null } as any);
 
     const req = new Request('http://localhost:3000/api/ai/generate', {
