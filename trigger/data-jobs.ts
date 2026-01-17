@@ -1,7 +1,7 @@
 import { task, schedules } from '@trigger.dev/sdk/v3';
 import { db } from '@/lib/db';
 import { users, subscriptions, usage } from '@/lib/db/schema';
-import { eq, lt, and } from 'drizzle-orm';
+import { eq, lt } from 'drizzle-orm';
 import { uploadToR2 } from '@/lib/storage';
 import { sendWelcomeEmail } from './email-jobs';
 
@@ -392,7 +392,7 @@ export const processUserOnboarding = task({
             limit,
             resetAt: nextMonth,
           });
-        } catch (error) {
+        } catch {
           // Might already exist, ignore
           console.log(`[Onboarding] Usage ${feature} might already exist`);
         }

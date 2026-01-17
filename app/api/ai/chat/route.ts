@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   try {
     const result = await generateTextStream({
       messages,
-      onFinish: ({ text, usage }) => {
+      onFinish: ({ text: _text, usage }) => {
         // Track AI usage for analytics/billing
         console.log('AI generation completed', {
           userId,

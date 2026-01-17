@@ -1,8 +1,7 @@
 import { task, schedules } from '@trigger.dev/sdk/v3';
 import { Resend } from 'resend';
 import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { users as _users } from '@/lib/db/schema';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 

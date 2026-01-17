@@ -213,7 +213,7 @@ export async function POST(req: Request) {
       // Invoice paid successfully
       case 'invoice.paid': {
         const invoice = event.data.object as Stripe.Invoice;
-        const customerId = invoice.customer as string;
+        const _customerId = invoice.customer as string;
         const subscriptionId = invoice.subscription as string;
 
         if (subscriptionId) {
