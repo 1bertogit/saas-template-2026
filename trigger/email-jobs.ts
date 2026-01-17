@@ -1,4 +1,4 @@
-import { task, schedules } from '@trigger.dev/sdk/v3';
+import { task, schedules, logger } from '@trigger.dev/sdk/v3';
 import { Resend } from 'resend';
 import { db } from '@/lib/db';
 
@@ -16,7 +16,7 @@ export const sendWelcomeEmail = task({
   },
   run: async (payload: { email: string; name: string; userId?: string }) => {
     if (!resend) {
-      console.warn('[Job] Resend not configured, skipping welcome email');
+      logger.warn('Resend not configured, skipping welcome email');
       return { success: false, reason: 'resend_not_configured' };
     }
 
@@ -82,7 +82,7 @@ export const sendSubscriptionEmail = task({
     periodEnd?: string;
   }) => {
     if (!resend) {
-      console.warn('[Job] Resend not configured, skipping subscription email');
+      logger.warn('Resend not configured, skipping subscription email');
       return { success: false, reason: 'resend_not_configured' };
     }
 
@@ -278,10 +278,10 @@ export const dailyDigestEmail = schedules.task({
       try {
         // In production, you would fetch user-specific metrics here
         // For now, we skip actual sending to avoid spam
-        console.warn(`[DailyDigest] Would send digest to ${user.email}`);
+        logger.info('Would send digest', { email: user.email });
         sent++;
       } catch (error) {
-        console.error(`[DailyDigest] Failed for ${user.email}:`, error);
+        logger.error('Failed to send digest', { email: user.email, error });
         failed++;
       }
     }

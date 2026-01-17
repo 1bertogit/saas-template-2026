@@ -20,8 +20,8 @@ export function Providers({ children }: ProvidersProps) {
       autocapture: false,
     });
     return () => {
-      // PostHog cleanup - reset on unmount
-      posthog.reset();
+      // PostHog cleanup is handled automatically
+      // Note: reset() should only be called on user logout, not component unmount
     };
   }, [apiKey, host]);
 
