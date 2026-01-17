@@ -1,7 +1,7 @@
 import { task, schedules } from '@trigger.dev/sdk/v3';
 import { db } from '@/lib/db';
 import { users, subscriptions, usage } from '@/lib/db/schema';
-import { eq, lt, and } from 'drizzle-orm';
+import { eq, lt } from 'drizzle-orm';
 import { uploadToR2 } from '@/lib/storage';
 import { sendWelcomeEmail } from './email-jobs';
 
@@ -46,7 +46,7 @@ export const processDataExport = task({
   }) => {
     const { userId, exportType, dataType } = payload;
 
-    console.log(`[DataExport] Processing ${exportType} export for user ${userId}, type: ${dataType}`);
+    console.warn(`[DataExport] Processing ${exportType} export for user ${userId}, type: ${dataType}`);
 
     // Fetch user data based on type
     const user = await db.query.users.findFirst({
@@ -121,7 +121,7 @@ export const processDataExport = task({
 
     try {
       const url = await uploadToR2(filename, buffer, contentType);
-      console.log(`[DataExport] Export uploaded: ${url}`);
+      console.warn(`[DataExport] Export uploaded: ${url}`);
 
       return {
         success: true,
@@ -144,7 +144,7 @@ export const generateWeeklyReports = schedules.task({
   cron: '0 6 * * 1', // Every Monday at 6 AM
   maxDuration: 600, // 10 minutes
   run: async () => {
-    console.log('[WeeklyReports] Generating weekly reports...');
+    console.warn('[WeeklyReports] Generating weekly reports...');
 
     const allUsers = await db.query.users.findMany({
       columns: {
@@ -178,7 +178,7 @@ export const generateWeeklyReports = schedules.task({
           })),
         };
 
-        console.log(`[WeeklyReports] Generated report for ${user.email}:`, JSON.stringify(report));
+        console.warn(`[WeeklyReports] Generated report for ${user.email}:`, JSON.stringify(report));
         processed++;
       } catch (error) {
         console.error(`[WeeklyReports] Error for ${user.email}:`, error);
@@ -201,7 +201,7 @@ export const cleanupOldFiles = schedules.task({
   cron: '0 3 * * 0', // Every Sunday at 3 AM
   maxDuration: 300,
   run: async () => {
-    console.log('[CleanupFiles] Starting file cleanup...');
+    console.warn('[CleanupFiles] Starting file cleanup...');
 
     // In a real implementation, you would:
     // 1. List all files in the exports folder
@@ -212,7 +212,7 @@ export const cleanupOldFiles = schedules.task({
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    console.log(`[CleanupFiles] Would delete files older than ${thirtyDaysAgo.toISOString()}`);
+    console.warn(`[CleanupFiles] Would delete files older than ${thirtyDaysAgo.toISOString()}`);
 
     // Example: Track files to delete
     const filesToDelete: string[] = [];
@@ -240,7 +240,7 @@ export const resetMonthlyUsage = schedules.task({
   cron: '0 0 1 * *', // First day of each month at midnight
   maxDuration: 300,
   run: async () => {
-    console.log('[ResetUsage] Resetting monthly usage limits...');
+    console.warn('[ResetUsage] Resetting monthly usage limits...');
 
     const now = new Date();
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -265,7 +265,7 @@ export const resetMonthlyUsage = schedules.task({
           .where(eq(usage.id, record.id));
 
         reset++;
-        console.log(`[ResetUsage] Reset usage for ${record.userId}, feature: ${record.feature}`);
+        console.warn(`[ResetUsage] Reset usage for ${record.userId}, feature: ${record.feature}`);
       } catch (error) {
         errors++;
         console.error(`[ResetUsage] Failed to reset ${record.id}:`, error);
@@ -309,21 +309,21 @@ export const syncExternalServices = task({
         switch (service) {
           case 'analytics':
             // Sync with PostHog
-            console.log(`[SyncServices] Syncing ${user.email} with analytics`);
+            console.warn(`[SyncServices] Syncing ${user.email} with analytics`);
             // In production: await posthog.identify(userId, { email: user.email, ... })
             results[service] = { success: true };
             break;
 
           case 'crm':
             // Sync with CRM (e.g., HubSpot)
-            console.log(`[SyncServices] Syncing ${user.email} with CRM`);
+            console.warn(`[SyncServices] Syncing ${user.email} with CRM`);
             // In production: await crm.upsertContact(user)
             results[service] = { success: true };
             break;
 
           case 'billing':
             // Sync with Stripe
-            console.log(`[SyncServices] Syncing ${user.email} with billing`);
+            console.warn(`[SyncServices] Syncing ${user.email} with billing`);
             // In production: await stripe.customers.update(...)
             results[service] = { success: true };
             break;
@@ -357,7 +357,7 @@ export const processUserOnboarding = task({
   }) => {
     const { userId, email, name } = payload;
 
-    console.log(`[Onboarding] Processing onboarding for ${email}`);
+    console.warn(`[Onboarding] Processing onboarding for ${email}`);
 
     // 1. Send welcome email
     await sendWelcomeEmail.trigger({
@@ -392,9 +392,9 @@ export const processUserOnboarding = task({
             limit,
             resetAt: nextMonth,
           });
-        } catch (error) {
+        } catch {
           // Might already exist, ignore
-          console.log(`[Onboarding] Usage ${feature} might already exist`);
+          console.warn(`[Onboarding] Usage ${feature} might already exist`);
         }
       }
     }
@@ -405,7 +405,7 @@ export const processUserOnboarding = task({
       services: ['analytics'],
     });
 
-    console.log(`[Onboarding] Completed onboarding for ${email}`);
+    console.warn(`[Onboarding] Completed onboarding for ${email}`);
 
     return {
       success: true,
