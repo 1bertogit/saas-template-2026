@@ -1,19 +1,26 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
-  throw new Error('R2 credentials are not set');
-}
+// Lazy initialization to avoid throwing during module load (helps with testing)
+let r2Client: S3Client | null = null;
 
-// Cloudflare R2 Client (S3-compatible)
-const r2Client = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-  },
-});
+function getR2Client(): S3Client {
+  if (!r2Client) {
+    if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
+      throw new Error('R2 credentials are not set');
+    }
+
+    r2Client = new S3Client({
+      region: 'auto',
+      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+      },
+    });
+  }
+  return r2Client;
+}
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME || 'saas-uploads';
 const PUBLIC_URL = process.env.R2_PUBLIC_URL; // Optional: if you have a custom domain
@@ -33,7 +40,7 @@ export async function uploadToR2(
     ContentType: contentType,
   });
 
-  await r2Client.send(command);
+  await getR2Client().send(command);
 
   // Return public URL if available, otherwise signed URL
   if (PUBLIC_URL) {
@@ -52,7 +59,7 @@ export async function deleteFromR2(key: string): Promise<void> {
     Key: key,
   });
 
-  await r2Client.send(command);
+  await getR2Client().send(command);
 }
 
 /**
@@ -64,7 +71,7 @@ export async function getSignedR2Url(key: string, expiresIn: number = 3600): Pro
     Key: key,
   });
 
-  return getSignedUrl(r2Client, command, { expiresIn });
+  return getSignedUrl(getR2Client(), command, { expiresIn });
 }
 
 /**
