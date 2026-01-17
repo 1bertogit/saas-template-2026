@@ -12,11 +12,6 @@ if (SENTRY_DSN) {
     // Environment
     environment: process.env.NODE_ENV,
 
-    // Server-side specific options
-    integrations: [
-      Sentry.prismaIntegration(), // If using Prisma
-    ],
-
     // Filter out expected errors
     ignoreErrors: [
       'NEXT_NOT_FOUND',
@@ -25,10 +20,5 @@ if (SENTRY_DSN) {
 
     // Don't send errors in development unless explicitly enabled
     enabled: process.env.NODE_ENV === 'production' || process.env.SENTRY_DEBUG === 'true',
-
-    // Capture unhandled promise rejections
-    onUnhandledRejection: (reason) => {
-      Sentry.captureException(reason);
-    },
   });
 }

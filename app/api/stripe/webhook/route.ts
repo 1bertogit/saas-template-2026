@@ -17,9 +17,9 @@ import { isWebhookProcessed, markWebhookProcessed } from '@/lib/webhook-idempote
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-if (!webhookSecret) {
+if (!process.env.STRIPE_WEBHOOK_SECRET) {
   throw new Error('STRIPE_WEBHOOK_SECRET is not set');
 }
 

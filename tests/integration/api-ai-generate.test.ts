@@ -19,7 +19,7 @@ describe('/api/ai/generate', () => {
   });
 
   it('should reject unauthorized requests', async () => {
-    vi.mocked(auth).mockReturnValueOnce({ userId: null } as ReturnType<typeof auth>);
+    vi.mocked(auth).mockResolvedValueOnce({ userId: null } as unknown as Awaited<ReturnType<typeof auth>>);
 
     const req = new Request('http://localhost:3000/api/ai/generate', {
       method: 'POST',

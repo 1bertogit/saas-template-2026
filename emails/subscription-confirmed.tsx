@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Html } from '@react-email/html';
+import { Html } from '@react-email/components';
 
 interface SubscriptionEmailProps {
   plan: string;
