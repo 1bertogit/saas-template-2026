@@ -25,10 +25,5 @@ if (SENTRY_DSN) {
 
     // Don't send errors in development unless explicitly enabled
     enabled: process.env.NODE_ENV === 'production' || process.env.SENTRY_DEBUG === 'true',
-
-    // Capture unhandled promise rejections
-    onUnhandledRejection: (reason) => {
-      Sentry.captureException(reason);
-    },
   });
 }

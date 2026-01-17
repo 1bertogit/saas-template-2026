@@ -19,7 +19,9 @@ export function Providers({ children }: ProvidersProps) {
       api_host: host,
       autocapture: false,
     });
-    return () => posthog.shutdown();
+    return () => {
+      // PostHog cleanup is handled automatically
+    };
   }, [apiKey, host]);
 
   const content = (
