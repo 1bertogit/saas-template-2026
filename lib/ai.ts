@@ -1,19 +1,26 @@
 import OpenAI from 'openai';
 
-const apiKey = process.env.OPENROUTER_API_KEY;
+// Lazy initialization to avoid throwing during build
+let aiClient: OpenAI | null = null;
 
-if (!apiKey) {
-  throw new Error('OPENROUTER_API_KEY is not set');
+function getAIClient(): OpenAI {
+  if (!aiClient) {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENROUTER_API_KEY is not set');
+    }
+
+    aiClient = new OpenAI({
+      apiKey,
+      baseURL: 'https://openrouter.ai/api/v1',
+      defaultHeaders: {
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+        'X-Title': process.env.NEXT_PUBLIC_APP_NAME || 'SaaS Template 2026',
+      },
+    });
+  }
+  return aiClient;
 }
-
-export const ai = new OpenAI({
-  apiKey,
-  baseURL: 'https://openrouter.ai/api/v1',
-  defaultHeaders: {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    'X-Title': process.env.NEXT_PUBLIC_APP_NAME || 'SaaS Template 2026',
-  },
-});
 
 export const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-3.5-sonnet';
 
@@ -28,6 +35,7 @@ export async function generateText({
   maxTokens?: number;
   temperature?: number;
 }) {
+  const ai = getAIClient();
   const completion = await ai.chat.completions.create({
     model,
     messages: [{ role: 'user', content: prompt }],
